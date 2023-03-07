@@ -76,7 +76,7 @@ if not (E.Retail or E.Wrath) then
 	INTERRUPT_MSG = INTERRUPT_MSG:gsub('|cff71d5ff|Hspell:%%d:0|h(%[%%s])|h|r','%1')
 end
 
-local OFFENSIVE_DISPEL_MSG = L["Disppeled %s's) |cff71d5ff|Hspell:%d:0|h[%s]|h|r!"
+local OFFENSIVE_DISPEL_MSG = L["Removed %s's) |cff71d5ff|Hspell:%d:0|h[%s]|h|r!"
 if not (E.Retail or E.Wrath) then
 	OFFENSIVE_DISPEL_MSG = OFFENSIVE_DISPEL_MSG:gsub('|cff71d5ff|Hspell:%%d:0|h(%[%%s])|h|r','%1')
 end
