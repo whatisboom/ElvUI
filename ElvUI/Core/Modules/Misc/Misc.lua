@@ -123,7 +123,8 @@ function M:COMBAT_LOG_EVENT_UNFILTERED()
 
 	local _, event, _, sourceGUID, _, _, _, destGUID, destName, _, _, _, _, _, spellID, spellName = CombatLogGetCurrentEventInfo()
 	local announceInterrupts = spellName and (destGUID ~= E.myguid) and (sourceGUID == E.myguid or sourceGUID == UnitGUID('pet')) and strmatch(event, '_INTERRUPT')
-	local announceDispels = spellName and (destGUID ~= E.myguid) and (sourceGUID == E.myguid or sourceGUID == UnitGUID('pet')) and strmatch(event, '_INTERRUPT')
+	local isDispelOrSteal = (strmatch(event, '_DISPEL') and not strmatch(event, '_DISPEL_FAILED')) or strmatch(event, '_STOLEN')
+	local announceDispels = spellName and (destGUID ~= E.myguid) and (sourceGUID == E.myguid or sourceGUID == UnitGUID('pet')) and isDispelOrSteal
 
 	local inRaid, inPartyLFG = IsInRaid(), E.Retail and IsPartyLFG()
 
