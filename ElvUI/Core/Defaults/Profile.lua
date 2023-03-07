@@ -17,6 +17,7 @@ P.general = {
 	stickyFrames = true,
 	loginmessage = true,
 	interruptAnnounce = 'NONE',
+	offensiveDispelAnnounce = 'PARTY', -- testing until i get options UI in
 	autoRepair = 'NONE',
 	autoTrackReputation = false,
 	autoAcceptInvite = false,

@@ -76,6 +76,11 @@ if not (E.Retail or E.Wrath) then
 	INTERRUPT_MSG = INTERRUPT_MSG:gsub('|cff71d5ff|Hspell:%%d:0|h(%[%%s])|h|r','%1')
 end
 
+local OFFENSIVE_DISPEL_MSG = L["Disppeled %s's) |cff71d5ff|Hspell:%d:0|h[%s]|h|r!"
+if not (E.Retail or E.Wrath) then
+	OFFENSIVE_DISPEL_MSG = OFFENSIVE_DISPEL_MSG:gsub('|cff71d5ff|Hspell:%%d:0|h(%[%%s])|h|r','%1')
+end
+
 function M:ErrorFrameToggle(event)
 	if not E.db.general.hideErrorFrame then return end
 
@@ -96,13 +101,29 @@ function M:ZoneTextToggle()
 	end
 end
 
+function M:POST_CASCADING_CHAT_MESSAGE(targetChannel, message)
+	if targetChannel == 'PARTY' then
+		SendChatMessage(message, inPartyLFG and 'INSTANCE_CHAT' or 'PARTY')
+	elseif targetChannel == 'RAID' then
+		SendChatMessage(message, inPartyLFG and 'INSTANCE_CHAT' or (inRaid and 'RAID' or 'PARTY'))
+	elseif targetChannel == 'RAID_ONLY' and inRaid then
+		SendChatMessage(message, inPartyLFG and 'INSTANCE_CHAT' or 'RAID')
+	elseif targetChannel == 'SAY' and instanceType ~= 'none' then
+		SendChatMessage(message, 'SAY')
+	elseif targetChannel == 'YELL' and instanceType ~= 'none' then
+		SendChatMessage(message, 'YELL')
+	elseif targetChannel == 'EMOTE' then
+		SendChatMessage(message, 'EMOTE')
+	end
+end
+
 function M:COMBAT_LOG_EVENT_UNFILTERED()
 	local inGroup = IsInGroup()
 	if not inGroup then return end
 
 	local _, event, _, sourceGUID, _, _, _, destGUID, destName, _, _, _, _, _, spellID, spellName = CombatLogGetCurrentEventInfo()
-	local announce = spellName and (destGUID ~= E.myguid) and (sourceGUID == E.myguid or sourceGUID == UnitGUID('pet')) and strmatch(event, '_INTERRUPT')
-	if not announce then return end -- No announce-able interrupt from player or pet, exit.
+	local announceInterrupts = spellName and (destGUID ~= E.myguid) and (sourceGUID == E.myguid or sourceGUID == UnitGUID('pet')) and strmatch(event, '_INTERRUPT')
+	local announceDispels = spellName and (destGUID ~= E.myguid) and (sourceGUID == E.myguid or sourceGUID == UnitGUID('pet')) and strmatch(event, '_INTERRUPT')
 
 	local inRaid, inPartyLFG = IsInRaid(), E.Retail and IsPartyLFG()
 
@@ -117,21 +138,16 @@ function M:COMBAT_LOG_EVENT_UNFILTERED()
 
 		inRaid = false --IsInRaid() returns true for arenas and they should not be considered a raid
 	end
-
-	local channel = E.db.general.interruptAnnounce
-	local msg = (E.Retail or E.Wrath) and format(INTERRUPT_MSG, destName or UNKNOWN, spellID, spellName) or format(INTERRUPT_MSG, destName or UNKNOWN, spellName)
-	if channel == 'PARTY' then
-		SendChatMessage(msg, inPartyLFG and 'INSTANCE_CHAT' or 'PARTY')
-	elseif channel == 'RAID' then
-		SendChatMessage(msg, inPartyLFG and 'INSTANCE_CHAT' or (inRaid and 'RAID' or 'PARTY'))
-	elseif channel == 'RAID_ONLY' and inRaid then
-		SendChatMessage(msg, inPartyLFG and 'INSTANCE_CHAT' or 'RAID')
-	elseif channel == 'SAY' and instanceType ~= 'none' then
-		SendChatMessage(msg, 'SAY')
-	elseif channel == 'YELL' and instanceType ~= 'none' then
-		SendChatMessage(msg, 'YELL')
-	elseif channel == 'EMOTE' then
-		SendChatMessage(msg, 'EMOTE')
+	if announceInterrupts then -- No announce-able interrupt from player or pet.
+		local interruptChannel = E.db.general.interruptAnnounce
+		local interruptMsgFormatted = (E.Retail or E.Wrath) and format(INTERRUPT_MSG, destName or UNKNOWN, spellID, spellName) or format(INTERRUPT_MSG, destName or UNKNOWN, spellName)
+		M:POST_CASCADING_CHAT_MESSAGE(interruptChannel, interruptMsgFormatted)
+	end
+	
+	if announceDispels then -- No announce-able dispel from player or pet.
+		local offensiveDispelChannel = E.db.offensiveDispelAnnounce
+		local offensiveDispelMsgFormatted = (E.Retail or E.Wrath) and format(OFFENSIVE_DISPEL_MSG, destName or UNKNOWN, spellID, spellName) or format(OFFENSIVE_DISPEL_MSG, destName or UNKNOWN, spellName)
+		M:POST_CASCADING_CHAT_MESSAGE(offensiveDispelChannel, offensiveDispelMsgFormatted)
 	end
 end
 
